@@ -1,5 +1,6 @@
 #include "tinyinfer/ops.h"
 
+#include <algorithm>
 #include <cmath>
 
 namespace tinyinfer {
@@ -23,8 +24,24 @@ void gelu(float* x, int n) {
 }
 
 void softmax(float* x, int n) {
-    (void)x, (void)n;
-    throw NotImplemented("softmax");
+    // Loop 1: find the largest value
+    float max_val = x[0];
+    for (int i = 1; i < n; i++) {
+        max_val = std::max(max_val, x[i]);
+    }
+
+    // Loop 2: exponentiate (shifted by max so nothing overflows) and sum
+    float sum = 0.0f;
+    for (int i = 0; i < n; i++) {
+        x[i] = std::exp(x[i] - max_val);
+        sum += x[i];
+    }
+
+    // Loop 3: normalize so everything adds to 1
+    float inv_sum = 1.0f / sum;
+    for (int i = 0; i < n; i++) {
+        x[i] *= inv_sum;
+    }
 }
 
 // The forward pass, per token position t:
